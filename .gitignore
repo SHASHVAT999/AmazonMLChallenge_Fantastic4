@@ -1,2 +1,111 @@
-DatasetForMLChallenge.zip
+# ============================================================
+# Datasets / raw & derived data
+# ============================================================
+# Challenge dataset copies (both dataset/ and amazon_docs/student_resource/dataset/
+# match, since a slash-free pattern matches a directory of that name at any depth).
+data/
 dataset/
+datasets/
+train/
+test/
+validation/
+val/
+DatasetForMLChallenge.zip
+
+# Common large/raw data file formats
+*.csv
+*.tsv
+*.json
+*.jsonl
+*.parquet
+*.feather
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.npz
+*.npy
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+
+# Config/metadata JSON files that ARE part of the source tree and must stay
+# tracked despite the blanket *.json rule above.
+!skills-lock.json
+
+# ============================================================
+# ML-generated / experiment output artifacts
+# ============================================================
+models/
+checkpoints/
+outputs/
+output/
+results/
+runs/
+logs/
+wandb/
+mlruns/
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.safetensors
+predictions/
+embeddings/
+submissions/
+*.log
+
+# ============================================================
+# Python
+# ============================================================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+venv/
+.venv/
+env/
+.env/
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# ============================================================
+# Secrets / local config
+# ============================================================
+.env
+.env.*
+!.env.example
+*credentials*
+*secrets*
+*.pem
+*.key
+
+# ============================================================
+# IDE / OS
+# ============================================================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ============================================================
+# Node / frontend (kept for safety; no Node project currently present)
+# ============================================================
+node_modules/
+.next/
+.turbo/
+
+# ============================================================
+# Misc large binaries / archives
+# ============================================================
+*.7z
+*.rar
+*.bin
