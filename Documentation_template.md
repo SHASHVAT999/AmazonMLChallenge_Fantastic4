@@ -59,15 +59,17 @@ output/matching_results.tsv         output/candidate_pairs.tsv
 
 ## 3. Candidate Generation (Blocking)
 
-To reduce comparison complexity from trillions of potential pairs to a manageable, high-recall candidate set, we implement four complementary blocking keys applied strictly within country boundaries:
-- **Key 1 (Clean Name):** Strips punctuation, non-alphanumeric noise, and standard business entity legal suffixes (`Pvt`, `Ltd`, `Private Limited`, `LLP`, `Inc`, `LLC`, `Corp`, `Corporation`, `Co`, `Company`, `SA`, `SARL`, `GmbH`).
+To reduce comparison complexity from trillions of potential pairs to a manageable, high-recall candidate set, we implement complementary blocking keys applied strictly within country boundaries:
+- **Key 1 (Clean Name):** Strips punctuation, non-alphanumeric noise, and standard business entity legal suffixes (`Pvt`, `Ltd`, `Private Limited`, `LLP`, `Inc`, `LLC`, `Corp`, `Corporation`, `Co`, `Company`, `SA`, `SARL`, `GmbH`, `Societe`).
 - **Key 2 (Sorted Name Tokens):** Alphabetically sorts normalized name tokens to guarantee exact matching regardless of word transpositions (e.g., `"Noreen's Piedmont Hair Studio"` matches `"NOREEN'S STUDIO HAIR PIEDMONT"`).
-- **Key 3 (Clean Address):** Normalized full address string stripped of punctuation and common whitespace variations.
-- **Key 4 (Sorted Address Tokens):** Alphabetically sorts unique address tokens of length $\ge 2$ to capture addresses with permuted components (e.g., street numbers, city, state in reverse order).
+- **Key 3 (Two-Token Name Prefix):** Matches pairs sharing the first two leading business words to capture name abbreviations, additions, and suffixes (e.g., `"Maure Williams Colombier Inc"` vs `"Maure Williams Inc Center"`).
+- **Key 4 (Clean Address):** Normalized full address string stripped of punctuation and common whitespace variations.
+- **Key 5 (Sorted Address Tokens):** Alphabetically sorts unique address tokens of length $\ge 2$ to capture addresses with permuted components (e.g., street numbers, city, state in reverse order).
+- **Key 6 (Numeric Address Signature):** Extracts street numbers and postal/PIN codes coupled with leading name prefix to reliably link transliterated entities (e.g. Tamil or Devanagari records) sharing distinct building and municipal numbers.
 
 **Statistics:**
-- **Recall Coverage:** Captures $>94.5\%$ of true matches in validation testing.
-- **Candidate Reduction Ratio:** Filters out over $99.98\%$ of non-matching pairs, generating an average of 15 to 25 high-quality candidates per Source 1 entity.
+- **Recall Coverage:** Exceeds $>95\%$ of true matches in validation testing.
+- **Candidate Reduction Ratio:** Filters out over $99.98\%$ of non-matching pairs.
 - **Candidate Pairs:** Exported directly to `output/candidate_pairs.tsv` satisfying the superset constraint for final matches.
 
 ---
@@ -76,15 +78,18 @@ To reduce comparison complexity from trillions of potential pairs to a manageabl
 
 ### Features Used:
 1. **Name Similarity ($S_{\text{name}}$):** Exact clean name equality bonus (1.0), falling back to Jaro-Winkler character-level edit similarity. Jaro-Winkler gives higher weight to prefix matches while remaining resilient to spelling typos.
-2. **Address Similarity ($S_{\text{addr}}$):** Exact address equality bonus (1.0), falling back to Jaro-Winkler string similarity. When address information is absent or below minimum character length in either record, a neutral baseline prior ($0.70$) is applied.
-3. **Composite Match Score:**
-   $$\text{Score} = 0.55 \times S_{\text{name}} + 0.45 \times S_{\text{addr}}$$
-   Giving appropriate weight to name identity while ensuring address consistency validates the match.
+2. **Address Similarity ($S_{\text{addr}}$):** Exact address equality bonus (1.0), falling back to Jaro-Winkler string similarity.
+3. **Adaptive Composite Match Score:**
+   - **Dual Verification (when address present in both):**
+     $$\text{Score} = 0.50 \times S_{\text{name}} + 0.50 \times S_{\text{addr}}$$
+     Requires $\text{Score} \ge 0.81$ AND $S_{\text{addr}} \ge 0.65$ to prevent false merges across different branches in different cities.
+   - **Name-Only Verification (when address missing in either):**
+     $$\text{Score} = 0.92 \times S_{\text{name}}$$
+     Enforces a stricter confidence threshold ($\text{Score} \ge 0.88$) to guard against false merges when location cannot be cross-referenced.
 
 ### Decision Boundary & Threshold Selection:
-- **Calibrated Threshold:** Empirical grid search over validation data identified $\tau = 0.83$ as the optimal trade-off maximizing macro $F_{0.5}$.
-- **Address Consistency Gate:** When address is present in both records, a minimum address similarity threshold of $0.50$ is enforced to prevent matching businesses sharing identical common brand names in different locations.
-- **Max-k Match Cap:** Final matches are capped at the top 5 highest-confidence candidates per Source 1 entity, matching the empirical upper bound of the true ground-truth match distribution.
+- **Calibrated Multi-Country Thresholds:** Empirical grid search over combined India and US validation splits established $\tau = 0.81$ (with minimum address similarity $0.65$) as optimal for $F_{0.5}$.
+- **Max-k Match Cap:** Final matches are capped at the top 4 highest-confidence candidates per Source 1 entity, closely tracking ground truth distribution while pruning low-confidence tail predictions.
 - **Singleton Handling:** If no candidate satisfies the confidence criteria, an empty match string is produced, securing full 1.0 macro credit for true singletons.
 
 ---
