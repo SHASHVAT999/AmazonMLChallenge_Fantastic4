@@ -1,2 +1,9 @@
 DatasetForMLChallenge.zip
 dataset/
+student_resource/
+output/
+*.zip
+*.tsv
+sample_matches.txt
+missed_samples.txt
+scripts/
